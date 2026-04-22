@@ -8,7 +8,7 @@ from parser import get_timetable
 from utils.config import config
 
 SERVICE_ACCOUNT_FILE = config.CRED_PATH
-TIMEZONE = "Europe/Moscow"
+TIMEZONE = "Asia/Yekaterinburg"
 HOLIDAY_CALENDAR_ID = "ru.russian#holiday@group.v.calendar.google.com"
 UTC_OFFSET_HOURS = 5
 RUN_HOURS = [8, 20]
@@ -71,7 +71,7 @@ def sync_timetable_to_calendar(data, CALENDAR_ID, colors=None):
     current_monday = current_monday.replace(hour=0, minute=0, second=0, microsecond=0)
 
     current_week_num = now.isocalendar()[1]
-    current_week_type = "1" if current_week_num % 2 != 0 else "2"
+    current_week_type = "2" if current_week_num % 2 != 0 else "1"
 
     weeks_to_sync = 2
 
@@ -239,4 +239,4 @@ def scheduler_loop():
 
 
 if __name__ == "__main__":
-    scheduler_loop()
+    start_sync()
