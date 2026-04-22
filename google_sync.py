@@ -1,5 +1,6 @@
 import json
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, timezone
+import time as time_module
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -9,6 +10,8 @@ from utils.config import config
 SERVICE_ACCOUNT_FILE = config.CRED_PATH
 TIMEZONE = "Europe/Moscow"
 HOLIDAY_CALENDAR_ID = "ru.russian#holiday@group.v.calendar.google.com"
+UTC_OFFSET_HOURS = 5
+RUN_HOURS = [8, 20]
 
 
 def get_service():
@@ -189,18 +192,51 @@ def sync_timetable_to_calendar(data, CALENDAR_ID, colors=None):
         delete_batch.execute()
 
 
+service = get_service()
+
+
+def start_sync():
+    """Основная функция синхронизации"""
+    try:
+        with open(config.USERS_FILE, "r", encoding="utf-8") as f:
+            users = json.load(f)
+
+        for email in users.keys():
+            try:
+                timetable_data = get_timetable(users[email]["group"], True)
+                if timetable_data:
+                    sync_timetable_to_calendar(
+                        timetable_data, email, users[email].get("colors")
+                    )
+            except Exception as e:
+                print(f"Ошибка синхронизации для {email}: {e}")
+    except Exception as e:
+        print(f"Критическая ошибка при чтении файла пользователей: {e}")
+
+
+def get_next_run_time():
+    now_utc = datetime.now(timezone.utc)
+    local_now = now_utc + timedelta(hours=UTC_OFFSET_HOURS)
+    today = local_now.date()
+    candidates = []
+    for hour in RUN_HOURS:
+        run_time = datetime.combine(today, time(hour, 0))
+        if run_time <= local_now.replace(tzinfo=None):
+            run_time += timedelta(days=1)
+        candidates.append(run_time)
+    next_run = min(candidates)
+    delta = next_run - local_now.replace(tzinfo=None)
+    return delta.total_seconds()
+
+
+def scheduler_loop():
+    """Легковесный планировщик"""
+    while True:
+        seconds_to_wait = get_next_run_time()
+        time_module.sleep(min(seconds_to_wait, 60))
+        if seconds_to_wait <= 60:
+            start_sync()
+
+
 if __name__ == "__main__":
-    with open(config.USERS_FILE, "r", encoding="utf-8") as f:
-        users = json.load(f)
-
-    service = get_service()
-
-    for email in users.keys():
-        try:
-            timetable_data = get_timetable(users[email]["group"], True)
-            if timetable_data:
-                sync_timetable_to_calendar(
-                    timetable_data, email, users[email].get("colors")
-                )
-        except Exception as e:
-            print(f"Ошибка синхронизации для {email}: {e}")
+    scheduler_loop()
