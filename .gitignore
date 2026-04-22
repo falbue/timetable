@@ -3,6 +3,10 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+.vscode/
+credentials.json
+users.json
+
 # C extensions
 *.so
 
