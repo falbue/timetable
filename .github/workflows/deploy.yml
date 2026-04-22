@@ -88,40 +88,30 @@ jobs:
     if: needs.check-tags.outputs.tag != 'false' && success()
     runs-on: ubuntu-latest
     steps:
-      - name: Создание деплоя через Deploy API
+      - name: Deploy or Redeploy
         env:
-          DEPLOY_API_URL: https://deploy.falbue.ru
-          DEPLOY_API_KEY: ${{ secrets.DEPLOY_API_KEY }}
+          URL: https://deploy.falbue.ru
+          KEY: ${{ secrets.DEPLOY_API_KEY }}
+          REPO: ${{ github.repository }}
           TAG: ${{ needs.check-tags.outputs.tag }}
-          OWNER_REPO: ${{ github.repository }}
         run: |
-          if [ -z "$DEPLOY_API_URL" ] || [ -z "$DEPLOY_API_KEY" ]; then
-            echo "::error::Не заданы DEPLOY_API_URL или DEPLOY_API_KEY"
-            exit 1
-          fi
-
-          PAYLOAD=$(jq -nc \
-            --arg owner_repo "$OWNER_REPO" \
-            --arg tag "$TAG" \
-            '{
-              "owner_repo": $owner_repo,
-              "tag": $tag,
-              "run_deploy": true
-            }')
-
-          RESPONSE=$(curl --fail-with-body -sS -w "\n%{http_code}" -X POST \
+          RESP=$(curl -sS -w "\n%{http_code}" -X POST "$URL/deployments" \
             -H "Content-Type: application/json" \
-            -H "X-API-Key: $DEPLOY_API_KEY" \
-            -d "$PAYLOAD" \
-            "$DEPLOY_API_URL/deployments")
+            -H "X-API-Key: $KEY" \
+            -d "{\"owner_repo\":\"$REPO\",\"tag\":\"$TAG\",\"run_deploy\":true}")
 
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | sed '$d')
+          CODE=${RESP##*$'\n'}
+          BODY=${RESP%$'\n'*}
 
-          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "✅ Деплой успешно инициирован."
+          if [[ "$CODE" -ge 200 && "$CODE" -lt 300 ]]; then
+            echo "Deployed"
+          elif echo "$BODY" | grep -q "уже задеплоен"; then
+            echo "Redeploying..."
+            curl -f -X POST "$URL/deployments/$REPO/redeploy" \
+              -H "Content-Type: application/json" \
+              -H "X-API-Key: $KEY" \
+              -d "{\"tag\":\"$TAG\"}"
           else
-            echo "::error::Ошибка при создании деплоя. HTTP Code: $HTTP_CODE"
-            echo "Ответ сервера: $BODY"
+            echo "::error::Failed ($CODE): $BODY"
             exit 1
           fi
