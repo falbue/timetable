@@ -239,4 +239,4 @@ def scheduler_loop():
 
 
 if __name__ == "__main__":
-    start_sync()
+    scheduler_loop()
