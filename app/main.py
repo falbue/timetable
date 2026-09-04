@@ -1,17 +1,21 @@
 import json
-from datetime import datetime, timedelta, time, timezone
 import time as time_module
+from datetime import datetime, time, timedelta, timezone
+
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from parser import get_timetable
 from utils.config import config
+from utils.logger import setup_logger
 
 SERVICE_ACCOUNT_FILE = config.CRED_PATH
 TIMEZONE = "Asia/Yekaterinburg"
 HOLIDAY_CALENDAR_ID = "ru.russian#holiday@group.v.calendar.google.com"
 UTC_OFFSET_HOURS = 5
 RUN_HOURS = [8, 20]
+
+log = setup_logger("PARSER", log_path=config.LOG_PATH, level=config.LOG_LEVEL)
 
 
 def get_service():
@@ -231,12 +235,15 @@ def get_next_run_time():
 
 def scheduler_loop():
     """Легковесный планировщик"""
+    log.debug("Запуск планировщика")
     while True:
         seconds_to_wait = get_next_run_time()
+        log.debug(f"Ожидание следующего запуска ({seconds_to_wait} секунд)")
         time_module.sleep(min(seconds_to_wait, 60))
         if seconds_to_wait <= 60:
             start_sync()
 
 
 if __name__ == "__main__":
+    log.debug("Запуск приложения")
     scheduler_loop()

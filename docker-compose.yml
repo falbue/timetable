@@ -1,0 +1,9 @@
+services:
+  timetable:
+    container_name: timetable
+    image: ghcr.io/falbue/timetable:latest
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/app

@@ -1,13 +1,18 @@
 import json
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+from utils.config import config
+from utils.logger import setup_logger
 
 UTL = "https://timetable.magtu.ru"
 
+log = setup_logger("PARSER", log_path=config.LOG_PATH, level=config.LOG_LEVEL)
+
 
 def get_html(group: str) -> str:
+    log.debug(f"Получение HTML для группы: {group}")
     response = requests.get(f"{UTL}/{group}")
     return response.text
 
@@ -21,8 +26,10 @@ def check_week_parity() -> bool:
     week_number = datetime.now().isocalendar()[1]
 
     if week_number % 2 == 0:
+        log.debug(f"Неделя четная: {week_number}")
         return True
     else:
+        log.debug(f"Неделя нечетная: {week_number}")
         return False
 
 

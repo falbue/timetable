@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
-from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ConfigSettings(BaseSettings):
@@ -19,6 +20,16 @@ class ConfigSettings(BaseSettings):
     CRED_PATH: str = Field(
         default="credentials.json",
         description="Путь к файлу с учетными данными для доступа к Google API",
+    )
+
+    LOG_PATH: str = Field(
+        default="logs",
+        description="Путь к файлу для записи логов",
+    )
+
+    LOG_LEVEL: str = Field(
+        default="DEBUG",
+        description="Уровень логирования",
     )
 
 
