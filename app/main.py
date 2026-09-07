@@ -209,6 +209,7 @@ def start_sync():
             try:
                 timetable_data = get_timetable(users[email]["group"], True)
                 if timetable_data:
+                    log.info(f"Расписание пользователя {email} получено")
                     sync_timetable_to_calendar(
                         timetable_data, email, users[email].get("colors")
                     )
@@ -236,6 +237,7 @@ def get_next_run_time():
 def scheduler_loop():
     """Легковесный планировщик"""
     log.debug("Запуск планировщика")
+    start_sync()
     while True:
         seconds_to_wait = get_next_run_time()
         log.debug(f"Ожидание следующего запуска ({seconds_to_wait} секунд)")

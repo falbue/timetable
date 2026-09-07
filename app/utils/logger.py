@@ -31,7 +31,7 @@ def setup_logger(
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
 
-    if log_path == "":
+    if log_path == "" or level == "DEBUG":
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
